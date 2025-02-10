@@ -1,19 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Image Detector</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Image Detector</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7f7f7;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+    }
+    #preview {
+      width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      display: none;
+    }
+    input[type="file"] {
+      display: block;
+      margin: 10px 0;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #4caf50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>AI Image Detector</h1>
-        <input type="file" id="imageInput" accept="image/*">
-        <button onclick="uploadImage()">Analyze Image</button>
-        <div id="result"></div>
-    </div>
+  <div class="container">
+    <h1>AI Image Detector</h1>
+    <p>Upload an image to check if it's AI-generated or real.</p>
+    <input type="file" id="imageUpload" accept="image/*" />
+    <img id="preview" src="" alt="Image preview" />
+    <button id="submitBtn">Analyze Image</button>
+    <div id="result"></div>
+  </div>
 
-    <script src="script.js"></script>
+  <script>
+    // Get references to HTML elements
+    const imageUpload = document.getElementById('imageUpload');
+    const preview = document.getElementById('preview');
+    const submitBtn = document.getElementById('submitBtn');
+    const resultDiv = document.getElementById('result');
+
+    let base64Image = ""; // Will hold our base64 encoded image
+
+    // When an image is selected, show its preview
+    imageUpload.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          base64Image = e.target.result; // This string includes the data URI scheme (e.g., "data:image/png;base64,...")
+          preview.src = base64Image;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // When the button is clicked, send the image to your backend
+    submitBtn.addEventListener('click', function () {
+      if (!base64Image) {
+        resultDiv.innerHTML = "Please upload an image first.";
+        return;
+      }
+
+      resultDiv.innerHTML = "Processing...";
+      
+      // Call your Gradio API endpoint hosted on Hugging Face
+      fetch("https://virginiagonsalves-image-detector.hf.space/api/predict/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        // The API expects a JSON with a "data" key that is an array; here we pass the image data URI.
+        body: JSON.stringify({ data: [base64Image] })
+      })
+      .then(response => response.json())
+      .then(data => {
+        // The API response is expected to be an object with a "data" array containing your prediction.
+        if (data && data.data && data.data.length > 0) {
+          resultDiv.innerHTML = data.data[0];
+        } else {
+          resultDiv.innerHTML = "Unexpected response from the server.";
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        resultDiv.innerHTML = "Error processing the image.";
+      });
+    });
+  </script>
 </body>
 </html>
