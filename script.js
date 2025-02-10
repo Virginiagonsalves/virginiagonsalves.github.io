@@ -9,13 +9,20 @@ async function uploadImage() {
     let formData = new FormData();
     formData.append("file", input);
 
-    let response = await fetch("https://virginiagonsalves-image-detector.hf.space/", {
-        method: "POST",
-        body: formData
-    });
+    try {
+        let response = await fetch("https://virginiagonsalves-image-detector.hf.space/predict", {
+            method: "POST",
+            body: formData
+        });
 
-    let data = await response.json();
-    document.getElementById("result").innerHTML = 
-        `<p><strong>Prediction:</strong> ${data.prediction}</p>
-         <p><strong>Confidence:</strong> ${data.confidence.toFixed(2)}%</p>`;
+        console.log("Response Status:", response.status);
+        let data = await response.json();  // Read response once
+
+        document.getElementById("result").innerHTML = 
+            `<p><strong>Prediction:</strong> ${data.prediction}</p>
+             <p><strong>Confidence:</strong> ${data.confidence.toFixed(2)}%</p>`;
+    } catch (error) {
+        console.error("Error:", error);
+        document.getElementById("result").innerHTML = `<p style="color:red;">Error: Unable to process the request.</p>`;
+    }
 }
